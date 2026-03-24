@@ -105,7 +105,41 @@ Build Cache     5       0        0B        0B
 
 **Discussion:** "Even one tiny hello-world uses 155 MB because it includes a full Python + Debian installation inside. That's the cost of isolation."
 
-**Show Docker Desktop GUI:** Open Docker Desktop → Images tab → show `hello-docker` and `python:3.10-slim`. Then Containers tab → show the stopped container. Students can see the same info visually.
+**Dig deeper — which images are the biggest?**
+```bash
+docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+```
+
+This shows each image and its size. After all 5 demos you'll see:
+```
+REPOSITORY     TAG         SIZE
+env-demo       latest      698MB
+spam-app       latest      698MB
+train-save     latest      400MB
+train-model    latest      400MB
+hello-docker   latest      147MB
+python         3.10-slim   147MB    ← shared base, not counted twice!
+```
+
+**Why are some bigger?** `hello-docker` has only Python (147 MB). `train-model` adds sklearn (+253 MB). `spam-app` adds sklearn + gradio (+551 MB). Each layer adds weight.
+
+**Dig deeper — which containers are eating space?**
+```bash
+docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Size}}"
+```
+
+Shows every container (running + stopped) with how much extra data it created:
+```
+NAMES              IMAGE          STATUS                      SIZE
+bold_tesla         hello-docker   Exited (0) 5 min ago        22B (virtual 147MB)
+```
+
+The `22B` is data written by the container. The `virtual 147MB` is the image size. Stopped containers are zombies taking up space — `docker container prune -f` cleans them.
+
+**Show Docker Desktop GUI:** Open Docker Desktop and walk through:
+- **Images tab** → show `hello-docker` and `python:3.10-slim`, click an image to see its layers
+- **Containers tab** → show the stopped container, click it to see Logs, Inspect, Terminal
+- Docker Desktop shows the same info as the CLI, just more visual
 
 ---
 
