@@ -47,7 +47,69 @@ This is NOT your laptop's Python.
 
 ---
 
-### 1.2 — Shell into the container (the "SSH" experience)
+### 1.2 — What just happened? Inspect images & containers
+
+After that one build + run, let's see what Docker created:
+
+**List all images on your machine:**
+```bash
+docker images
+```
+
+Expected:
+```
+REPOSITORY     TAG         IMAGE ID       CREATED          SIZE
+hello-docker   latest      a1b2c3d4e5f6   30 seconds ago   155MB
+python         3.10-slim   f7g8h9i0j1k2   2 weeks ago      155MB
+```
+
+**Point out:** Two images! `python:3.10-slim` was downloaded as the base (from Docker Hub). `hello-docker` is our image built on top of it.
+
+**List running containers:**
+```bash
+docker ps
+```
+
+Expected:
+```
+CONTAINER ID   IMAGE   STATUS   PORTS   NAMES
+```
+
+Empty! The container ran `hello.py`, printed output, and **exited**. It's not running anymore.
+
+**List ALL containers (including stopped ones):**
+```bash
+docker ps -a
+```
+
+Expected:
+```
+CONTAINER ID   IMAGE          STATUS                     NAMES
+c3d4e5f6g7h8   hello-docker   Exited (0) 10 seconds ago  bold_tesla
+```
+
+The container is still there as a "zombie" — stopped but not deleted.
+
+**How much disk space is Docker using?**
+```bash
+docker system df
+```
+
+Expected:
+```
+TYPE            TOTAL   ACTIVE   SIZE      RECLAIMABLE
+Images          2       1        155.2MB   155.2MB (100%)
+Containers      1       0        0B        0B
+Build Cache     5       0        0B        0B
+```
+
+**Discussion:** "Even one tiny hello-world uses 155 MB because it includes a full Python + Debian installation inside. That's the cost of isolation."
+
+**Show Docker Desktop GUI:** Open Docker Desktop → Images tab → show `hello-docker` and `python:3.10-slim`. Then Containers tab → show the stopped container. Students can see the same info visually.
+
+---
+
+### 1.3 — Shell into the container (the "SSH" experience)
 
 ```bash
 docker run -it hello-docker bash
@@ -79,7 +141,7 @@ cat /etc/os-release
 
 ---
 
-### 1.3 — Create a file inside the container
+### 1.4 — Create a file inside the container
 
 While still inside the container:
 
@@ -114,7 +176,7 @@ is now dead. This is the amnesia property. By design."
 
 ---
 
-### 1.4 — The image is a class, the container is an object
+### 1.5 — The image is a class, the container is an object
 
 ```bash
 # Start two containers from the same image, side by side
@@ -155,7 +217,7 @@ Just like `a = list()` and `b = list()` — they don't share state."
 
 ---
 
-### 1.5 — Override the default command
+### 1.6 — Override the default command
 
 The Dockerfile says `CMD ["python", "hello.py"]`, but you can override it:
 
@@ -544,9 +606,11 @@ cd ..
 
 ---
 
-## Bonus: Useful Docker Commands
+## Bonus: Inspect Everything (5 min)
 
-### See all images on your machine
+After all 5 demos, let's see what Docker accumulated on your machine.
+
+### All images on your machine
 
 ```bash
 docker images
@@ -554,22 +618,59 @@ docker images
 
 Expected:
 ```
-REPOSITORY     TAG       SIZE
-hello-docker   latest    155MB
-train-model    latest    590MB
-spam-app       latest    850MB
-train-save     latest    590MB
-env-demo       latest    950MB
-python         3.10-slim 155MB    ← base image, shared by all!
+REPOSITORY     TAG         SIZE
+hello-docker   latest      155MB
+train-model    latest      590MB
+spam-app       latest      850MB
+train-save     latest      590MB
+env-demo       latest      950MB
+python         3.10-slim   155MB    ← base image, shared by all!
 ```
 
-### See stopped containers (zombies)
+**Point out:** `python:3.10-slim` appears once even though all 5 demos use it — Docker shares base layers!
+
+### All containers (running + stopped)
 
 ```bash
 docker ps -a
 ```
 
-Shows containers that ran and stopped. They take up disk space!
+Expected:
+```
+CONTAINER ID   IMAGE          STATUS                      NAMES
+f1g2h3i4j5k6   env-demo       Exited (0) 2 minutes ago    zen_turing
+a1b2c3d4e5f6   hello-docker   Exited (0) 30 minutes ago   bold_tesla
+...            ...            ...                         ...
+```
+
+Every `docker run` creates a container. Stopped ones are "zombies" — they take disk space.
+
+### Total disk usage
+
+```bash
+docker system df
+```
+
+Expected:
+```
+TYPE            TOTAL   ACTIVE   SIZE      RECLAIMABLE
+Images          6       0        2.1GB     2.1GB (100%)
+Containers      8       0        12MB      12MB (100%)
+Build Cache     15      0        450MB     450MB (100%)
+```
+
+**Discussion:** "All 5 demos used ~2.5 GB of disk. That's the trade-off: isolation costs space. But `docker system prune` cleans it all up."
+
+### Show the same in Docker Desktop GUI
+
+Open Docker Desktop and walk through:
+
+1. **Images tab** — show all 6 images, their sizes, and the "In Use" badge
+2. **Containers tab** — show running vs stopped containers, click one to see its logs
+3. **Click on `spam-app`** — show the Logs, Inspect, and Terminal tabs
+4. **Settings → Resources** — show how much CPU/RAM/Disk is allocated to Docker
+
+**Discussion:** "Everything we just did with CLI commands, you can also see visually in Docker Desktop. Use whichever you prefer — the CLI is faster, the GUI is more discoverable."
 
 ### Clean up everything
 
@@ -582,20 +683,9 @@ docker rmi hello-docker train-model spam-app train-save env-demo
 
 # Nuclear option: remove everything unused
 docker system prune -f
-```
 
-### How much disk is Docker using?
-
-```bash
+# Check — should be nearly empty now
 docker system df
-```
-
-Expected:
-```
-TYPE            TOTAL   ACTIVE   SIZE
-Images          6       0        2.1GB
-Containers      0       0        0B
-Build Cache     12      0        450MB
 ```
 
 ---
